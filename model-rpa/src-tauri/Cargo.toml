@@ -1,0 +1,60 @@
+[package]
+name = "model-rpa"
+version = "0.1.0"
+description = "Model-RPA - 下一代语义化网页自动化操作系统"
+authors = ["Model-RPA Team"]
+license = "MIT"
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.2" }
+
+[dependencies]
+# Tauri 核心
+tauri = { version = "2.11.2", features = ["tray-icon"] }
+tauri-plugin-log = "2"
+tauri-plugin-shell = "2"
+
+# 序列化
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
+# 日志
+log = "0.4"
+
+# 异步运行时
+tokio = { version = "1", features = ["full"] }
+
+# SQLite
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# 加密存储 (Stronghold)
+tauri-plugin-stronghold = "2"
+
+# 定时任务
+tokio-cron-scheduler = "0.11"
+
+# UUID 生成
+uuid = { version = "1", features = ["v4"] }
+
+# 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+
+# 错误处理
+thiserror = "1"
+
+# 日志格式化
+env_logger = "0.11"
+
+# 系统目录
+dirs = "5"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
