@@ -1,4 +1,4 @@
-/* 基础样式 - 不依赖 Tailwind */
+@import "tailwindcss";
 
 :root {
   --color-primary: #4f46e5;
