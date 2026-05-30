@@ -1,31 +1,13 @@
+/**
+ * Model-RPA Database
+ * SQLite 数据库管理
+ */
+
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
 
 pub struct DatabaseState {
     pub path: PathBuf,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WorkflowRecord {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub nodes_json: String,
-    pub edges_json: String,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ExecutionLog {
-    pub id: String,
-    pub workflow_id: String,
-    pub status: String,
-    pub started_at: String,
-    pub finished_at: Option<String>,
-    pub error_message: Option<String>,
-    pub screenshots_json: Option<String>,
 }
 
 pub fn init_database(db_path: &PathBuf) -> Result<()> {
@@ -60,7 +42,7 @@ pub fn init_database(db_path: &PathBuf) -> Result<()> {
         [],
     )?;
 
-    // 创建凭证表（仅存储加密引用）
+    // 创建凭证表
     conn.execute(
         "CREATE TABLE IF NOT EXISTS credentials (
             id TEXT PRIMARY KEY,

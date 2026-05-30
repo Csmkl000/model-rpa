@@ -32,11 +32,9 @@ impl Default for WindowState {
 
 /// 初始化窗口
 pub fn init_window(app: &App) -> Result<(), Box<dyn std::error::Error>> {
-    // 获取主窗口
     let main_window = app.get_webview_window("main")
         .ok_or("Main window not found")?;
 
-    // 设置窗口事件处理
     let window_clone = main_window.clone();
     main_window.on_window_event(move |event| {
         match event {
@@ -59,65 +57,8 @@ pub fn init_window(app: &App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// 保存窗口状态
-pub fn save_window_state(window: &Window) -> Result<(), Box<dyn std::error::Error>> {
-    let size = window.outer_size()?;
-    let position = window.outer_position()?;
-    let is_maximized = window.is_maximized()?;
-    let is_fullscreen = window.is_fullscreen()?;
-
-    let state = WindowState {
-        width: size.width,
-        height: size.height,
-        x: position.x,
-        y: position.y,
-        is_maximized,
-        is_fullscreen,
-    };
-
-    let config_path = get_config_path();
-    let json = serde_json::to_string_pretty(&state)?;
-    std::fs::write(config_path, json)?;
-
-    log::debug!("保存窗口状态: {:?}", state);
-    Ok(())
-}
-
 /// 加载窗口状态
+#[allow(dead_code)]
 pub fn load_window_state() -> WindowState {
-    let config_path = get_config_path();
-
-    if config_path.exists() {
-        match std::fs::read_to_string(&config_path) {
-            Ok(json) => {
-                match serde_json::from_str::<WindowState>(&json) {
-                    Ok(state) => {
-                        log::debug!("加载窗口状态: {:?}", state);
-                        return state;
-                    }
-                    Err(e) => {
-                        log::warn!("解析窗口状态失败: {}", e);
-                    }
-                }
-            }
-            Err(e) => {
-                log::warn!("读取窗口状态失败: {}", e);
-            }
-        }
-    }
-
     WindowState::default()
-}
-
-/// 获取配置文件路径
-fn get_config_path() -> std::path::PathBuf {
-    let config_dir = dirs::config_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."));
-    let app_config_dir = config_dir.join("Model-RPA");
-
-    if !app_config_dir.exists() {
-        std::fs::create_dir_all(&app_config_dir).ok();
-    }
-
-    app_config_dir.join("window-state.json")
 }
