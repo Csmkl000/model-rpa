@@ -1,6 +1,6 @@
 /**
  * Model-RPA Process Manager
- * 进程管理 - 简化版本
+ * 进程管理 - 支持 Windows 和 Unix
  */
 
 use std::collections::HashMap;
@@ -64,6 +64,32 @@ impl ProcessManager {
         processes.values().cloned().collect()
     }
 
+    /// 检查进程是否存活
+    pub fn check_process_alive(pid: u32) -> bool {
+        #[cfg(target_os = "windows")]
+        {
+            Self::check_process_alive_windows(pid)
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            Self::check_process_alive_unix(pid)
+        }
+    }
+
+    /// 终止进程
+    pub fn kill_process(pid: u32) -> bool {
+        #[cfg(target_os = "windows")]
+        {
+            Self::kill_process_windows(pid)
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            Self::kill_process_unix(pid)
+        }
+    }
+
     /// 终止所有进程
     pub async fn kill_all(&self) -> Result<(), String> {
         let mut processes = self.processes.lock().await;
@@ -72,5 +98,74 @@ impl ProcessManager {
         }
         log::info!("终止所有进程");
         Ok(())
+    }
+
+    // ==================== Windows 实现 ====================
+
+    #[cfg(target_os = "windows")]
+    fn check_process_alive_windows(pid: u32) -> bool {
+        use windows::Win32::System::Threading::*;
+        use windows::Win32::Foundation::CloseHandle;
+
+        unsafe {
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            match handle {
+                Ok(handle) => {
+                    let mut exit_code = 0u32;
+                    let result = GetExitCodeProcess(handle, &mut exit_code);
+                    let _ = CloseHandle(handle);
+                    result.is_ok() && exit_code == 259 // STILL_ACTIVE
+                }
+                Err(_) => false,
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    fn kill_process_windows(pid: u32) -> bool {
+        use windows::Win32::System::Threading::*;
+        use windows::Win32::Foundation::CloseHandle;
+
+        unsafe {
+            let handle = OpenProcess(PROCESS_TERMINATE, false, pid);
+            match handle {
+                Ok(handle) => {
+                    let result = TerminateProcess(handle, 1);
+                    let _ = CloseHandle(handle);
+                    result.is_ok()
+                }
+                Err(_) => false,
+            }
+        }
+    }
+
+    // ==================== Unix 实现 ====================
+
+    #[cfg(not(target_os = "windows"))]
+    fn check_process_alive_unix(pid: u32) -> bool {
+        use std::process::Command;
+
+        let output = Command::new("kill")
+            .args(["-0", &pid.to_string()])
+            .output();
+
+        match output {
+            Ok(output) => output.status.success(),
+            Err(_) => false,
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn kill_process_unix(pid: u32) -> bool {
+        use std::process::Command;
+
+        let output = Command::new("kill")
+            .args(["-9", &pid.to_string()])
+            .output();
+
+        match output {
+            Ok(output) => output.status.success(),
+            Err(_) => false,
+        }
     }
 }
