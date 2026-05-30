@@ -12,8 +12,7 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        // Stronghold 暂时禁用（需要 Visual Studio Build Tools）
-        // .plugin(tauri_plugin_stronghold::init())
+        .plugin(tauri_plugin_stronghold::init())
         .setup(|app| {
             // 初始化日志
             if cfg!(debug_assertions) {
