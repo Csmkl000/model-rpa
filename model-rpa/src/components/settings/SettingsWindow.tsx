@@ -655,3 +655,5 @@ function AdvancedTab({ systemInfo }: { systemInfo: SystemInfo | null }) {
     </div>
   );
 }
+
+export default SettingsWindow;
