@@ -1,12 +1,9 @@
 /**
  * Model-RPA Window Management
- * 窗口管理、系统托盘、设置窗口
+ * 窗口管理 - 简化版本
  */
 
-use tauri::{
-    App, Manager, PhysicalPosition, PhysicalSize, Window, WindowEvent,
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-};
+use tauri::{App, Manager, Window, WindowEvent};
 use serde::{Deserialize, Serialize};
 
 /// 窗口状态
@@ -59,91 +56,8 @@ pub fn init_window(app: &App) -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // 创建系统托盘
-    create_tray(app)?;
-
     log::info!("窗口管理初始化完成");
     Ok(())
-}
-
-/// 创建系统托盘
-fn create_tray(app: &App) -> Result<(), Box<dyn std::error::Error>> {
-    let _tray = TrayIconBuilder::new()
-        .icon(app.default_window_icon().unwrap().clone())
-        .tooltip("Model-RPA - 下一代语义化网页自动化操作系统")
-        .on_tray_icon_event(|tray, event| {
-            match event {
-                TrayIconEvent::Click {
-                    button: MouseButton::Left,
-                    button_state: MouseButtonState::Up,
-                    ..
-                } => {
-                    // 点击托盘图标显示主窗口
-                    let app = tray.app_handle();
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                    }
-                }
-                TrayIconEvent::DoubleClick {
-                    button: MouseButton::Left,
-                    ..
-                } => {
-                    // 双击托盘图标显示主窗口
-                    let app = tray.app_handle();
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                        let _ = window.unminimize();
-                    }
-                }
-                _ => {}
-            }
-        })
-        .menu(&create_tray_menu(app.handle())?)
-        .on_menu_event(|app, event| {
-            match event.id.as_ref() {
-                "show" => {
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                    }
-                }
-                "settings" => {
-                    // 打开设置窗口
-                    let _ = commands::open_settings_window(app.clone());
-                }
-                "quit" => {
-                    app.exit(0);
-                }
-                _ => {}
-            }
-        })
-        .build(app)?;
-
-    Ok(())
-}
-
-/// 创建托盘菜单
-fn create_tray_menu(app: &tauri::AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, Box<dyn std::error::Error>> {
-    let menu = tauri::menu::MenuBuilder::new(app)
-        .item(&tauri::menu::MenuItemBuilder::new(app)
-            .id("show")
-            .text("显示主窗口")
-            .build()?)
-        .separator()
-        .item(&tauri::menu::MenuItemBuilder::new(app)
-            .id("settings")
-            .text("设置")
-            .build()?)
-        .separator()
-        .item(&tauri::menu::MenuItemBuilder::new(app)
-            .id("quit")
-            .text("退出")
-            .build()?)
-        .build()?;
-
-    Ok(menu)
 }
 
 /// 保存窗口状态

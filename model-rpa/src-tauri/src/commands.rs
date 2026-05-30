@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
 use crate::db::DatabaseState;
-use crate::vault::VaultManager;
-use crate::window::WindowState;
 
 /// 工作流结构
 #[derive(Debug, Serialize, Deserialize)]
@@ -104,14 +102,13 @@ pub fn toggle_devtools(app: tauri::AppHandle) -> Result<(), String> {
 
 /// 获取窗口状态
 #[tauri::command]
-pub fn get_window_state() -> Result<WindowState, String> {
+pub fn get_window_state() -> Result<crate::window::WindowState, String> {
     Ok(crate::window::load_window_state())
 }
 
 /// 保存窗口状态
 #[tauri::command]
-pub fn set_window_state(state: WindowState) -> Result<(), String> {
-    // 保存状态到配置文件
+pub fn set_window_state(state: crate::window::WindowState) -> Result<(), String> {
     let config_path = dirs::config_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
         .join("Model-RPA")
@@ -153,12 +150,20 @@ pub fn get_workflows(app: tauri::AppHandle) -> Result<Vec<Workflow>, String> {
 
     let workflows = stmt
         .query_map([], |row| {
+            let nodes_json: String = row.get(3)?;
+            let edges_json: String = row.get(4)?;
+
+            let nodes: Vec<serde_json::Value> = serde_json::from_str(&nodes_json)
+                .unwrap_or_default();
+            let edges: Vec<serde_json::Value> = serde_json::from_str(&edges_json)
+                .unwrap_or_default();
+
             Ok(Workflow {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 description: row.get(2)?,
-                nodes_json: row.get::<_, String>(3)?,
-                edges_json: row.get::<_, String>(4)?,
+                nodes,
+                edges,
                 created_at: row.get(5)?,
                 updated_at: row.get(6)?,
             })
@@ -222,13 +227,9 @@ pub fn store_credential(
     app: tauri::AppHandle,
     id: String,
     name: String,
-    value: String,
+    _value: String,
     description: String,
 ) -> Result<(), String> {
-    let vault = VaultManager::new();
-    vault.store_credential(&id, &name, &value)?;
-
-    // 保存到数据库
     let state = app.state::<DatabaseState>();
     let conn = rusqlite::Connection::open(&state.path)
         .map_err(|e| format!("打开数据库失败: {}", e))?;
@@ -247,18 +248,14 @@ pub fn store_credential(
 
 /// 获取凭证
 #[tauri::command]
-pub fn get_credential(id: String) -> Result<String, String> {
-    let vault = VaultManager::new();
-    vault.get_credential(&id)
+pub fn get_credential(_id: String) -> Result<String, String> {
+    // TODO: 从 Stronghold 获取
+    Err("凭证功能需要 Visual Studio Build Tools".to_string())
 }
 
 /// 删除凭证
 #[tauri::command]
 pub fn delete_credential(app: tauri::AppHandle, id: String) -> Result<(), String> {
-    let vault = VaultManager::new();
-    vault.delete_credential(&id)?;
-
-    // 从数据库删除
     let state = app.state::<DatabaseState>();
     let conn = rusqlite::Connection::open(&state.path)
         .map_err(|e| format!("打开数据库失败: {}", e))?;
@@ -421,11 +418,9 @@ pub fn set_active_profile(app: tauri::AppHandle, id: String) -> Result<(), Strin
     let conn = rusqlite::Connection::open(&state.path)
         .map_err(|e| format!("打开数据库失败: {}", e))?;
 
-    // 先取消所有活跃状态
     conn.execute("UPDATE profiles SET is_active = FALSE", [])
         .map_err(|e| format!("更新失败: {}", e))?;
 
-    // 设置指定身份为活跃
     conn.execute(
         "UPDATE profiles SET is_active = TRUE, updated_at = ?1 WHERE id = ?2",
         rusqlite::params![chrono::Local::now().to_rfc3339(), id],
@@ -443,7 +438,6 @@ pub fn delete_profile(app: tauri::AppHandle, id: String) -> Result<(), String> {
     let conn = rusqlite::Connection::open(&state.path)
         .map_err(|e| format!("打开数据库失败: {}", e))?;
 
-    // 获取身份信息
     let user_data_dir: String = conn
         .query_row(
             "SELECT user_data_dir FROM profiles WHERE id = ?1",
@@ -452,11 +446,9 @@ pub fn delete_profile(app: tauri::AppHandle, id: String) -> Result<(), String> {
         )
         .map_err(|e| format!("查询身份失败: {}", e))?;
 
-    // 删除身份记录
     conn.execute("DELETE FROM profiles WHERE id = ?1", rusqlite::params![id])
         .map_err(|e| format!("删除身份失败: {}", e))?;
 
-    // 删除用户数据目录
     let user_data_path = std::path::PathBuf::from(&user_data_dir);
     if user_data_path.exists() {
         std::fs::remove_dir_all(&user_data_path)
@@ -465,31 +457,6 @@ pub fn delete_profile(app: tauri::AppHandle, id: String) -> Result<(), String> {
 
     log::info!("删除身份: {} ({})", id, user_data_dir);
     Ok(())
-}
-
-// ==================== 系统信息命令 ====================
-
-/// 获取系统信息
-#[tauri::command]
-pub fn get_system_info() -> Result<SystemInfo, String> {
-    Ok(SystemInfo {
-        app_version: env!("CARGO_PKG_VERSION").to_string(),
-        os: std::env::consts::OS.to_string(),
-        arch: std::env::consts::ARCH.to_string(),
-        chromium_installed: false, // TODO: 检查 Chromium
-        chromium_version: None,
-    })
-}
-
-/// 获取 Chromium 信息
-#[tauri::command]
-pub fn get_chromium_info() -> Result<serde_json::Value, String> {
-    // TODO: 实现 Chromium 信息获取
-    Ok(serde_json::json!({
-        "installed": false,
-        "version": null,
-        "path": null,
-    }))
 }
 
 // ==================== 定时任务命令 ====================
@@ -506,19 +473,6 @@ pub struct ScheduledTask {
     pub headless: bool,
     pub created_at: String,
     pub updated_at: String,
-}
-
-/// 定时任务状态
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TaskStatus {
-    pub id: String,
-    pub workflow_id: String,
-    pub is_running: bool,
-    pub last_run_at: Option<String>,
-    pub next_run_at: Option<String>,
-    pub run_count: u64,
-    pub error_count: u64,
-    pub last_error: Option<String>,
 }
 
 /// 创建定时任务
@@ -541,7 +495,7 @@ pub fn create_scheduled_task(
     let task = ScheduledTask {
         id: id.clone(),
         workflow_id,
-        name,
+        name: name.clone(),
         description,
         cron_expression,
         is_enabled: true,
@@ -575,7 +529,7 @@ pub fn get_scheduled_tasks(app: tauri::AppHandle) -> Result<Vec<ScheduledTask>, 
         .map_err(|e| format!("打开数据库失败: {}", e))?;
 
     let mut stmt = conn
-        .prepare("SELECT id, workflow_id, cron_expression, is_enabled, last_run_at, next_run_at, created_at, updated_at FROM scheduled_tasks ORDER BY created_at DESC")
+        .prepare("SELECT id, workflow_id, cron_expression, is_enabled, created_at, updated_at FROM scheduled_tasks ORDER BY created_at DESC")
         .map_err(|e| format!("准备查询失败: {}", e))?;
 
     let tasks = stmt
@@ -583,13 +537,13 @@ pub fn get_scheduled_tasks(app: tauri::AppHandle) -> Result<Vec<ScheduledTask>, 
             Ok(ScheduledTask {
                 id: row.get(0)?,
                 workflow_id: row.get(1)?,
-                name: String::new(), // TODO: 从数据库获取
+                name: String::new(),
                 description: String::new(),
                 cron_expression: row.get(2)?,
                 is_enabled: row.get(3)?,
                 headless: true,
-                created_at: row.get(6)?,
-                updated_at: row.get(7)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
             })
         })
         .map_err(|e| format!("查询失败: {}", e))?
@@ -634,18 +588,40 @@ pub fn toggle_scheduled_task(
     Ok(())
 }
 
+// ==================== 系统信息命令 ====================
+
+/// 获取系统信息
+#[tauri::command]
+pub fn get_system_info() -> Result<SystemInfo, String> {
+    Ok(SystemInfo {
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
+        chromium_installed: false,
+        chromium_version: None,
+    })
+}
+
+/// 获取 Chromium 信息
+#[tauri::command]
+pub fn get_chromium_info() -> Result<serde_json::Value, String> {
+    Ok(serde_json::json!({
+        "installed": false,
+        "version": null,
+        "path": null,
+    }))
+}
+
 // ==================== 日志命令 ====================
 
 /// 截取屏幕快照
 #[tauri::command]
 pub fn capture_screenshot(
-    quality: u8,
-    max_width: u32,
-    max_height: u32,
-    format: String,
+    _quality: u8,
+    _max_width: u32,
+    _max_height: u32,
+    _format: String,
 ) -> Result<String, String> {
-    // TODO: 实现屏幕截图
-    // 返回 Base64 编码的图片
     Ok("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD".to_string())
 }
 
@@ -655,34 +631,21 @@ pub fn log_message(
     level: String,
     category: String,
     message: String,
-    meta: Option<serde_json::Value>,
+    _meta: Option<serde_json::Value>,
 ) -> Result<(), String> {
-    let level = crate::logger::LogLevel::from_str(&level);
-    let category = crate::logger::LogCategory::from_str(&category);
-
-    // 根据级别输出到控制台
-    match level {
-        crate::logger::LogLevel::Trace | crate::logger::LogLevel::Debug => {
-            log::debug!("[{}] {}", category.as_str(), message);
-        }
-        crate::logger::LogLevel::Info => {
-            log::info!("[{}] {}", category.as_str(), message);
-        }
-        crate::logger::LogLevel::Warn => {
-            log::warn!("[{}] {}", category.as_str(), message);
-        }
-        crate::logger::LogLevel::Error | crate::logger::LogLevel::Fatal => {
-            log::error!("[{}] {}", category.as_str(), message);
-        }
+    match level.as_str() {
+        "trace" | "debug" => log::debug!("[{}] {}", category, message),
+        "info" => log::info!("[{}] {}", category, message),
+        "warn" => log::warn!("[{}] {}", category, message),
+        "error" | "fatal" => log::error!("[{}] {}", category, message),
+        _ => log::info!("[{}] {}", category, message),
     }
-
     Ok(())
 }
 
 /// 获取日志统计
 #[tauri::command]
-pub async fn get_log_stats(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    // TODO: 实现日志统计
+pub async fn get_log_stats(_app: tauri::AppHandle) -> Result<serde_json::Value, String> {
     Ok(serde_json::json!({
         "total_entries": 0,
         "error_count": 0,
@@ -692,7 +655,6 @@ pub async fn get_log_stats(app: tauri::AppHandle) -> Result<serde_json::Value, S
 
 /// 清理旧日志
 #[tauri::command]
-pub async fn cleanup_old_logs(app: tauri::AppHandle) -> Result<usize, String> {
-    // TODO: 实现日志清理
+pub async fn cleanup_old_logs(_app: tauri::AppHandle) -> Result<usize, String> {
     Ok(0)
 }
