@@ -1,197 +1,249 @@
 /**
  * Model-RPA Live View
- * 实时浏览器视图
+ * 实时浏览器视图 - 内联样式版本
  */
 
-import { useState, useRef, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { useState } from 'react';
 
-interface LiveViewProps {
-  onElementClick?: (element: { selector: string; text: string }) => void;
-}
-
-export function LiveView({ onElementClick }: LiveViewProps) {
+export function LiveView() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('');
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // 加载 URL
   const handleLoadUrl = async () => {
     if (!inputUrl.trim()) return;
-
     setIsLoading(true);
-    try {
-      // 确保 URL 有协议前缀
-      let url = inputUrl;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-      }
-
-      setCurrentUrl(url);
-      setInputUrl(url);
-
-      // TODO: 通知后端加载 URL
-      // await invoke('load_url', { url });
-    } catch (error) {
-      console.error('加载 URL 失败:', error);
-    } finally {
-      setIsLoading(false);
+    let url = inputUrl;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
     }
+    setCurrentUrl(url);
+    setInputUrl(url);
+    setTimeout(() => setIsLoading(false), 1000);
   };
 
-  // 切换录制模式
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    // TODO: 通知后端切换录制模式
-  };
-
-  // 刷新页面
-  const handleRefresh = () => {
-    if (currentUrl) {
-      setInputUrl(currentUrl);
-      handleLoadUrl();
-    }
-  };
-
-  // 返回上一页
-  const handleGoBack = () => {
-    // TODO: 通知后端返回上一页
-  };
-
-  // 前进
-  const handleGoForward = () => {
-    // TODO: 通知后端前进
+  const styles = {
+    container: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      height: '100%',
+    },
+    toolbar: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '8px 12px',
+      background: '#1f2937',
+      borderBottom: '1px solid #374151',
+    },
+    navBtn: {
+      padding: '6px',
+      color: '#9ca3af',
+      background: 'transparent',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontSize: '14px',
+    },
+    urlInput: {
+      flex: 1,
+      padding: '8px 12px',
+      background: '#374151',
+      color: 'white',
+      fontSize: '13px',
+      borderRadius: '6px',
+      border: '1px solid #4b5563',
+      outline: 'none',
+    },
+    goBtn: {
+      padding: '8px 16px',
+      background: '#4f46e5',
+      color: 'white',
+      fontSize: '13px',
+      borderRadius: '6px',
+      border: 'none',
+      cursor: 'pointer',
+    },
+    recordBtn: {
+      padding: '8px 16px',
+      fontSize: '13px',
+      borderRadius: '6px',
+      border: 'none',
+      cursor: 'pointer',
+    },
+    content: {
+      flex: 1,
+      position: 'relative' as const,
+      background: 'white',
+    },
+    loading: {
+      position: 'absolute' as const,
+      inset: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'rgba(255,255,255,0.9)',
+      zIndex: 10,
+    },
+    empty: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100%',
+    },
+    emptyContent: {
+      textAlign: 'center' as const,
+    },
+    emptyIcon: {
+      fontSize: '64px',
+      marginBottom: '16px',
+    },
+    emptyTitle: {
+      fontSize: '20px',
+      fontWeight: 600,
+      color: '#374151',
+      margin: '0 0 8px 0',
+    },
+    emptyDesc: {
+      color: '#6b7280',
+      margin: '0 0 24px 0',
+      fontSize: '14px',
+    },
+    quickLinks: {
+      display: 'flex',
+      flexWrap: 'wrap' as const,
+      justifyContent: 'center',
+      gap: '8px',
+    },
+    quickLink: {
+      padding: '8px 16px',
+      background: '#f3f4f6',
+      color: '#374151',
+      borderRadius: '6px',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '13px',
+    },
+    recording: {
+      position: 'absolute' as const,
+      top: '16px',
+      right: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '8px 16px',
+      background: '#dc2626',
+      color: 'white',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    },
+    statusBar: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 16px',
+      background: '#1f2937',
+      borderTop: '1px solid #374151',
+      fontSize: '11px',
+      color: '#9ca3af',
+    },
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div style={styles.container}>
       {/* 工具栏 */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-gray-800 border-b border-gray-700">
-        {/* 导航按钮 */}
-        <button
-          onClick={handleGoBack}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-          title="后退"
-        >
-          ←
-        </button>
-        <button
-          onClick={handleGoForward}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-          title="前进"
-        >
-          →
-        </button>
-        <button
-          onClick={handleRefresh}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-          title="刷新"
-        >
-          ↻
+      <div style={styles.toolbar}>
+        <button style={styles.navBtn} title="后退">←</button>
+        <button style={styles.navBtn} title="前进">→</button>
+        <button style={styles.navBtn} title="刷新" onClick={() => currentUrl && setInputUrl(currentUrl)}>↻</button>
+
+        <input
+          type="text"
+          value={inputUrl}
+          onChange={(e) => setInputUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleLoadUrl()}
+          placeholder="输入网址..."
+          style={styles.urlInput}
+        />
+        <button onClick={handleLoadUrl} style={styles.goBtn}>
+          {isLoading ? '加载中...' : '前往'}
         </button>
 
-        {/* URL 输入框 */}
-        <div className="flex-1 flex items-center gap-2">
-          <input
-            type="text"
-            value={inputUrl}
-            onChange={(e) => setInputUrl(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLoadUrl()}
-            placeholder="输入网址..."
-            className="flex-1 px-3 py-1.5 bg-gray-700 text-white text-sm rounded-lg border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
-          />
-          <button
-            onClick={handleLoadUrl}
-            disabled={isLoading}
-            className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-          >
-            {isLoading ? '加载中...' : '前往'}
-          </button>
-        </div>
-
-        {/* 录制按钮 */}
         <button
-          onClick={toggleRecording}
-          className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-            isRecording
-              ? 'bg-red-600 text-white hover:bg-red-700'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
+          onClick={() => setIsRecording(!isRecording)}
+          style={{
+            ...styles.recordBtn,
+            background: isRecording ? '#dc2626' : '#374151',
+            color: isRecording ? 'white' : '#d1d5db',
+          }}
         >
           {isRecording ? '⏹️ 停止录制' : '🔴 开始录制'}
         </button>
       </div>
 
-      {/* 浏览器视图 */}
-      <div className="flex-1 relative bg-white">
+      {/* 内容区 */}
+      <div style={styles.content}>
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">正在加载页面...</p>
+          <div style={styles.loading}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 32,
+                height: 32,
+                border: '3px solid #e5e7eb',
+                borderTop: '3px solid #4f46e5',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 12px',
+              }} />
+              <p style={{ color: '#6b7280' }}>正在加载页面...</p>
             </div>
           </div>
         )}
 
         {!currentUrl ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🌐</div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                浏览器视图
-              </h3>
-              <p className="text-gray-500 mb-4">
-                输入网址开始浏览，或点击录制按钮录制操作
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {['https://www.baidu.com', 'https://www.taobao.com', 'https://www.jd.com'].map(
-                  (url) => (
-                    <button
-                      key={url}
-                      onClick={() => {
-                        setInputUrl(url);
-                        handleLoadUrl();
-                      }}
-                      className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      {new URL(url).hostname}
-                    </button>
-                  )
-                )}
+          <div style={styles.empty}>
+            <div style={styles.emptyContent}>
+              <div style={styles.emptyIcon}>🌐</div>
+              <h3 style={styles.emptyTitle}>浏览器视图</h3>
+              <p style={styles.emptyDesc}>输入网址开始浏览，或点击录制按钮录制操作</p>
+              <div style={styles.quickLinks}>
+                {['baidu.com', 'taobao.com', 'jd.com'].map((url) => (
+                  <button
+                    key={url}
+                    onClick={() => {
+                      setInputUrl('https://www.' + url);
+                      handleLoadUrl();
+                    }}
+                    style={styles.quickLink}
+                  >
+                    {url}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         ) : (
           <iframe
-            ref={iframeRef}
             src={currentUrl}
-            className="w-full h-full border-0"
+            style={{ width: '100%', height: '100%', border: 'none' }}
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
             title="Live View"
           />
         )}
 
-        {/* 录制模式指示器 */}
         {isRecording && (
-          <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg shadow-lg animate-pulse">
-            <div className="w-3 h-3 bg-white rounded-full"></div>
-            <span className="text-sm font-medium">录制中</span>
+          <div style={styles.recording}>
+            <div style={{ width: 10, height: 10, background: 'white', borderRadius: '50%' }} />
+            <span style={{ fontSize: '13px', fontWeight: 500 }}>录制中</span>
           </div>
         )}
       </div>
 
       {/* 状态栏 */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-gray-800 border-t border-gray-700 text-xs text-gray-400">
-        <div className="flex items-center gap-4">
-          <span>状态: {isLoading ? '加载中' : '就绪'}</span>
-          {currentUrl && <span>URL: {currentUrl}</span>}
-        </div>
-        <div className="flex items-center gap-4">
-          <span>Chromium: 已连接</span>
-          <span>录制: {isRecording ? '开启' : '关闭'}</span>
-        </div>
+      <div style={styles.statusBar}>
+        <span>状态: {isLoading ? '加载中' : '就绪'}</span>
+        <span>录制: {isRecording ? '开启' : '关闭'}</span>
       </div>
     </div>
   );

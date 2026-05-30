@@ -1,6 +1,6 @@
 /**
  * Model-RPA Workspace
- * 双轨分屏工作区
+ * 双轨分屏工作区 - 内联样式版本
  */
 
 import { useState, useCallback } from 'react';
@@ -17,14 +17,12 @@ export function Workspace() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [showTimeline, setShowTimeline] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [splitPosition, setSplitPosition] = useState(50); // 百分比
+  const [splitPosition, setSplitPosition] = useState(50);
 
-  // 节点选择回调
   const handleNodeSelect = useCallback((node: Node | null) => {
     setSelectedNode(node);
   }, []);
 
-  // 工作流变更回调
   const handleWorkflowChange = useCallback(
     (newNodes: Node[], newEdges: Edge[]) => {
       setNodes(newNodes);
@@ -33,68 +31,153 @@ export function Workspace() {
     []
   );
 
-  // 执行工作流
   const handleExecute = useCallback(() => {
     setIsExecuting(true);
-    // TODO: 执行工作流
     setTimeout(() => setIsExecuting(false), 3000);
   }, []);
 
+  const styles = {
+    container: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      height: '100vh',
+      background: '#f3f4f6',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '12px 16px',
+      background: 'white',
+      borderBottom: '1px solid #e5e7eb',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    },
+    title: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+    },
+    h1: {
+      fontSize: '18px',
+      fontWeight: 700,
+      color: '#111827',
+      margin: 0,
+    },
+    subtitle: {
+      fontSize: '13px',
+      color: '#6b7280',
+    },
+    actions: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    },
+    btn: {
+      padding: '8px 16px',
+      fontSize: '13px',
+      fontWeight: 500,
+      borderRadius: '8px',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+    },
+    btnPrimary: {
+      background: '#4f46e5',
+      color: 'white',
+    },
+    btnSecondary: {
+      background: '#f3f4f6',
+      color: '#374151',
+    },
+    btnActive: {
+      background: '#e0e7ff',
+      color: '#4338ca',
+    },
+    main: {
+      flex: 1,
+      display: 'flex',
+      overflow: 'hidden',
+    },
+    canvasArea: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column' as const,
+    },
+    splitContainer: {
+      flex: 1,
+      display: 'flex',
+    },
+    canvas: {
+      flex: 1,
+      position: 'relative' as const,
+    },
+    divider: {
+      width: '4px',
+      background: '#e5e7eb',
+      cursor: 'col-resize',
+      transition: 'background 0.2s',
+    },
+    liveView: {
+      flex: 1,
+      background: '#1f2937',
+    },
+    timeline: {
+      height: '256px',
+      borderTop: '1px solid #e5e7eb',
+      background: 'white',
+    },
+    configPanel: {
+      width: '320px',
+      borderLeft: '1px solid #e5e7eb',
+      background: 'white',
+      overflowY: 'auto' as const,
+    },
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div style={styles.container}>
       {/* 顶部工具栏 */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-gray-900">Model-RPA</h1>
-          <span className="text-sm text-gray-500">工作流编辑器</span>
+      <header style={styles.header}>
+        <div style={styles.title}>
+          <h1 style={styles.h1}>🚀 Model-RPA</h1>
+          <span style={styles.subtitle}>工作流编辑器</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div style={styles.actions}>
           <button
             onClick={() => setShowTimeline(!showTimeline)}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              showTimeline
-                ? 'bg-indigo-100 text-indigo-700'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            style={{
+              ...styles.btn,
+              ...(showTimeline ? styles.btnActive : styles.btnSecondary),
+            }}
           >
             📊 时间轴
           </button>
           <button
             onClick={handleExecute}
             disabled={isExecuting}
-            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              isExecuting
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
-            }`}
+            style={{
+              ...styles.btn,
+              ...styles.btnPrimary,
+              opacity: isExecuting ? 0.6 : 1,
+              cursor: isExecuting ? 'not-allowed' : 'pointer',
+            }}
           >
-            {isExecuting ? (
-              <span className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                执行中...
-              </span>
-            ) : (
-              '▶️ 执行工作流'
-            )}
+            {isExecuting ? '⏳ 执行中...' : '▶️ 执行工作流'}
           </button>
         </div>
       </header>
 
       {/* 主内容区 */}
-      <div className="flex-1 flex overflow-hidden">
+      <div style={styles.main}>
         {/* 左侧：节点面板 */}
         <NodePalette />
 
         {/* 中间：画布和实时视图 */}
-        <div className="flex-1 flex flex-col">
-          {/* 分屏区域 */}
-          <div className="flex-1 flex">
+        <div style={styles.canvasArea}>
+          <div style={styles.splitContainer}>
             {/* 画布区域 */}
-            <div
-              className="flex-1 relative"
-              style={{ width: `${splitPosition}%` }}
-            >
+            <div style={{ ...styles.canvas, width: `${splitPosition}%` }}>
               <WorkflowCanvasWithProvider
                 onNodeSelect={handleNodeSelect}
                 onWorkflowChange={handleWorkflowChange}
@@ -103,15 +186,14 @@ export function Workspace() {
 
             {/* 分割线 */}
             <div
-              className="w-1 bg-gray-200 hover:bg-indigo-400 cursor-col-resize transition-colors"
+              style={styles.divider}
               onMouseDown={(e) => {
                 const startX = e.clientX;
                 const startWidth = splitPosition;
 
                 const onMouseMove = (e: MouseEvent) => {
                   const diff = ((e.clientX - startX) / window.innerWidth) * 100;
-                  const newPosition = Math.max(20, Math.min(80, startWidth + diff));
-                  setSplitPosition(newPosition);
+                  setSplitPosition(Math.max(20, Math.min(80, startWidth + diff)));
                 };
 
                 const onMouseUp = () => {
@@ -124,18 +206,15 @@ export function Workspace() {
               }}
             />
 
-            {/* 实时视图区域 */}
-            <div
-              className="flex-1 bg-gray-900"
-              style={{ width: `${100 - splitPosition}%` }}
-            >
+            {/* 实时视图 */}
+            <div style={{ ...styles.liveView, width: `${100 - splitPosition}%` }}>
               <LiveView />
             </div>
           </div>
 
-          {/* 时间轴面板（可折叠） */}
+          {/* 时间轴面板 */}
           {showTimeline && (
-            <div className="h-64 border-t border-gray-200 bg-white">
+            <div style={styles.timeline}>
               <Timeline />
             </div>
           )}
@@ -143,7 +222,7 @@ export function Workspace() {
 
         {/* 右侧：节点配置面板 */}
         {selectedNode && (
-          <div className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
+          <div style={styles.configPanel}>
             <NodeConfigPanel
               node={selectedNode}
               onClose={() => setSelectedNode(null)}

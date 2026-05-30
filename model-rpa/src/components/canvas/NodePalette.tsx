@@ -1,6 +1,6 @@
 /**
  * Model-RPA Node Palette
- * 节点面板 - 可拖拽节点到画布
+ * 节点面板 - 内联样式版本
  */
 
 import { useState } from 'react';
@@ -14,85 +14,16 @@ interface NodeItem {
 }
 
 const nodes: NodeItem[] = [
-  // 基础节点
-  {
-    type: 'action',
-    label: '动作节点',
-    icon: '🖱️',
-    description: '点击、输入、选择等操作',
-    category: '基础',
-  },
-  {
-    type: 'extract',
-    label: '数据提取',
-    icon: '📊',
-    description: '提取页面数据',
-    category: '基础',
-  },
-  {
-    type: 'wait',
-    label: '等待',
-    icon: '⏱️',
-    description: '等待时间或条件',
-    category: '基础',
-  },
-
-  // 控制节点
-  {
-    type: 'loop',
-    label: '循环',
-    icon: '🔄',
-    description: '重复执行或翻页',
-    category: '控制',
-  },
-  {
-    type: 'condition',
-    label: '条件判断',
-    icon: '🔀',
-    description: '根据条件分支',
-    category: '控制',
-  },
-  {
-    type: 'errorHandle',
-    label: '错误处理',
-    icon: '🛡️',
-    description: '处理执行错误',
-    category: '控制',
-  },
-
-  // 数据节点
-  {
-    type: 'variable',
-    label: '变量',
-    icon: '📝',
-    description: '变量操作',
-    category: '数据',
-  },
-  {
-    type: 'script',
-    label: '脚本',
-    icon: '📜',
-    description: '执行自定义代码',
-    category: '数据',
-  },
-
-  // 通知节点
-  {
-    type: 'notification',
-    label: '通知',
-    icon: '🔔',
-    description: '发送通知',
-    category: '通知',
-  },
-
-  // 高级节点
-  {
-    type: 'agent',
-    label: 'Agent 任务',
-    icon: '🤖',
-    description: 'AI 自主执行复杂任务',
-    category: '高级',
-  },
+  { type: 'action', label: '动作节点', icon: '🖱️', description: '点击、输入、选择', category: '基础' },
+  { type: 'extract', label: '数据提取', icon: '📊', description: '提取页面数据', category: '基础' },
+  { type: 'wait', label: '等待', icon: '⏱️', description: '等待时间或条件', category: '基础' },
+  { type: 'loop', label: '循环', icon: '🔄', description: '重复执行或翻页', category: '控制' },
+  { type: 'condition', label: '条件判断', icon: '🔀', description: '根据条件分支', category: '控制' },
+  { type: 'errorHandle', label: '错误处理', icon: '🛡️', description: '处理执行错误', category: '控制' },
+  { type: 'variable', label: '变量', icon: '📝', description: '变量操作', category: '数据' },
+  { type: 'script', label: '脚本', icon: '📜', description: '执行自定义代码', category: '数据' },
+  { type: 'notification', label: '通知', icon: '🔔', description: '发送通知', category: '通知' },
+  { type: 'agent', label: 'Agent', icon: '🤖', description: 'AI 自主执行', category: '高级' },
 ];
 
 const categories = ['基础', '控制', '数据', '通知', '高级'];
@@ -105,47 +36,145 @@ export function NodePalette() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  const styles = {
+    container: {
+      width: '240px',
+      background: 'white',
+      borderRight: '1px solid #e5e7eb',
+      overflowY: 'auto' as const,
+      display: 'flex',
+      flexDirection: 'column' as const,
+    },
+    header: {
+      padding: '16px',
+      borderBottom: '1px solid #e5e7eb',
+    },
+    title: {
+      fontSize: '16px',
+      fontWeight: 600,
+      color: '#111827',
+      margin: '0 0 4px 0',
+    },
+    subtitle: {
+      fontSize: '12px',
+      color: '#6b7280',
+      margin: 0,
+    },
+    content: {
+      padding: '8px',
+      flex: 1,
+    },
+    categoryBtn: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '10px 12px',
+      fontSize: '13px',
+      fontWeight: 500,
+      color: '#374151',
+      background: 'transparent',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+    },
+    nodeList: {
+      marginTop: '4px',
+    },
+    nodeItem: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      padding: '10px 12px',
+      background: '#f9fafb',
+      borderRadius: '8px',
+      cursor: 'grab',
+      marginBottom: '4px',
+      transition: 'background 0.2s',
+    },
+    nodeIcon: {
+      fontSize: '24px',
+    },
+    nodeInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+    nodeLabel: {
+      fontSize: '13px',
+      fontWeight: 500,
+      color: '#111827',
+    },
+    nodeDesc: {
+      fontSize: '11px',
+      color: '#6b7280',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap' as const,
+    },
+    tips: {
+      padding: '16px',
+      borderTop: '1px solid #e5e7eb',
+    },
+    tipsBox: {
+      background: '#eff6ff',
+      borderRadius: '8px',
+      padding: '12px',
+    },
+    tipsTitle: {
+      fontSize: '13px',
+      fontWeight: 600,
+      color: '#1e40af',
+      margin: '0 0 8px 0',
+    },
+    tipsList: {
+      fontSize: '11px',
+      color: '#1e40af',
+      margin: 0,
+      paddingLeft: '16px',
+    },
+  };
+
   return (
-    <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">节点面板</h2>
-        <p className="text-sm text-gray-500 mt-1">拖拽节点到画布</p>
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h2 style={styles.title}>节点面板</h2>
+        <p style={styles.subtitle}>拖拽节点到画布</p>
       </div>
 
-      <div className="p-2">
+      <div style={styles.content}>
         {categories.map((category) => (
-          <div key={category} className="mb-2">
+          <div key={category} style={{ marginBottom: '4px' }}>
             <button
-              onClick={() =>
-                setExpandedCategory(expandedCategory === category ? null : category)
-              }
-              className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+              onClick={() => setExpandedCategory(expandedCategory === category ? null : category)}
+              style={styles.categoryBtn}
             >
               <span>{category}</span>
-              <span className="text-gray-400">
+              <span style={{ color: '#9ca3af', fontSize: '12px' }}>
                 {expandedCategory === category ? '▼' : '▶'}
               </span>
             </button>
 
             {expandedCategory === category && (
-              <div className="mt-1 space-y-1">
+              <div style={styles.nodeList}>
                 {nodes
                   .filter((node) => node.category === category)
                   .map((node) => (
                     <div
                       key={node.type}
-                      className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg cursor-grab hover:bg-gray-100 transition-colors"
+                      style={styles.nodeItem}
                       draggable
                       onDragStart={(e) => onDragStart(e, node.type)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f3f4f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f9fafb';
+                      }}
                     >
-                      <span className="text-2xl">{node.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900">
-                          {node.label}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {node.description}
-                        </div>
+                      <span style={styles.nodeIcon}>{node.icon}</span>
+                      <div style={styles.nodeInfo}>
+                        <div style={styles.nodeLabel}>{node.label}</div>
+                        <div style={styles.nodeDesc}>{node.description}</div>
                       </div>
                     </div>
                   ))}
@@ -155,16 +184,13 @@ export function NodePalette() {
         ))}
       </div>
 
-      {/* 使用提示 */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="bg-blue-50 rounded-lg p-3">
-          <div className="text-sm font-medium text-blue-900 mb-2">💡 使用提示</div>
-          <ul className="text-xs text-blue-700 space-y-1">
-            <li>• 拖拽节点到画布创建步骤</li>
-            <li>• 连接节点定义执行顺序</li>
-            <li>• 点击节点配置参数</li>
-            <li>• 使用循环处理重复任务</li>
-            <li>• 使用错误处理增强稳定性</li>
+      <div style={styles.tips}>
+        <div style={styles.tipsBox}>
+          <div style={styles.tipsTitle}>💡 使用提示</div>
+          <ul style={styles.tipsList}>
+            <li>拖拽节点到画布</li>
+            <li>连接节点定义流程</li>
+            <li>点击节点配置参数</li>
           </ul>
         </div>
       </div>
