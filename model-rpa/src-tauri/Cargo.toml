@@ -34,8 +34,8 @@ tokio = { version = "1", features = ["full"] }
 # SQLite
 rusqlite = { version = "0.31", features = ["bundled"] }
 
-# 加密存储 (Stronghold)
-tauri-plugin-stronghold = "2"
+# 加密存储 (Stronghold) - 暂时注释，需要 Visual Studio Build Tools
+# tauri-plugin-stronghold = "2"
 
 # 定时任务
 tokio-cron-scheduler = "0.11"
