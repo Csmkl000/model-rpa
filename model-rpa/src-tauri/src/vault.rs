@@ -6,11 +6,11 @@
 use std::collections::HashMap;
 
 /// 凭证管理器
-#[allow(dead_code)]
 pub struct VaultManager {
     // Stronghold 实例会在运行时初始化
 }
 
+#[allow(dead_code)]
 impl VaultManager {
     pub fn new() -> Self {
         Self {}
