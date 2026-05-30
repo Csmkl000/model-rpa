@@ -3,7 +3,7 @@
  * 窗口管理 - 简化版本
  */
 
-use tauri::{App, Manager, Window, WindowEvent};
+use tauri::{App, Manager, WindowEvent};
 use serde::{Deserialize, Serialize};
 
 /// 窗口状态
