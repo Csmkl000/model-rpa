@@ -12,7 +12,8 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_stronghold::init())
+        // Stronghold 暂时禁用
+        // .plugin(tauri_plugin_stronghold::init())
         .setup(|app| {
             // 初始化日志
             if cfg!(debug_assertions) {
